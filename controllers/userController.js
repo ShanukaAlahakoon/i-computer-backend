@@ -2,6 +2,9 @@ import e from "express";
 import User from "../models/User.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 export function createUser(req, res) {
   const data = req.body;
@@ -44,13 +47,14 @@ export function loginUser(req, res) {
           isEmailVerified: user.isEmailVerified,
         };
 
-        const token = jwt.sign(payload, "secretKey#1227", {
+        const token = jwt.sign(payload, process.env.JWT_SECRET, {
           expiresIn: "150h",
         });
 
         res.json({
           message: "Login successful",
           token: token,
+          role: user.role,
         });
       } else {
         res.status(401).json({ message: "Invalid password" });

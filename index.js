@@ -3,15 +3,20 @@ import mongoose, { mongo, Mongoose } from "mongoose";
 import userRouter from "./routes/userRouter.js";
 import productRouter from "./routes/productRouter.js";
 import jwt from "jsonwebtoken";
+import cors from "cors";
+import dotenv from "dotenv";
 
-const mongoURI =
-  "mongodb+srv://admin:1234@cluster0.6qu6tez.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+dotenv.config();
+
+const mongoURI = process.env.MONGO_URL;
 
 mongoose.connect(mongoURI).then(() => {
   console.log("MongoDB connected");
 });
 
 const app = express();
+
+app.use(cors());
 
 app.use(express.json());
 
@@ -21,7 +26,7 @@ app.use((req, res, next) => {
   if (authorizationHeader != null) {
     const token = authorizationHeader.replace("Bearer ", "");
 
-    jwt.verify(token, "secretKey#1227", (error, content) => {
+    jwt.verify(token, process.env.JWT_SECRET, (error, content) => {
       if (content == null) {
         console.log("Invalid Token");
 
@@ -36,8 +41,8 @@ app.use((req, res, next) => {
   }
 });
 
-app.use("/users", userRouter);
-app.use("/products", productRouter);
+app.use("/api/users", userRouter);
+app.use("/api/products", productRouter);
 app.listen(4000, () => {
   console.log("Server is running on port 4000");
 });
