@@ -31,7 +31,7 @@ export function loginUser(req, res) {
 
   User.find({ email: email }).then((users) => {
     if (users[0] == null) {
-      res.json({ message: "User not found" });
+      res.status(404).json({ message: "User not found" });
     } else {
       const user = users[0];
 
