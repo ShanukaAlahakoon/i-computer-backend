@@ -58,6 +58,7 @@ export async function createOrder(req, res) {
       userId: req.user.userId,
       email: req.user.email,
       name: name,
+      phone: req.body.phone,
       address: req.body.address,
       total: total,
       items: items,
@@ -80,14 +81,33 @@ export async function getOrders(req, res) {
   }
 
   if (isAdmin(req)) {
-    const orders = await Order.find({
-      email: req.user.email,
-    }).sort({ date: -1 });
+    const orders = await Order.find({}).sort({ date: -1 });
     res.json({ orders });
   } else {
     const orders = await Order.find({ email: req.user.email }).sort({
       date: -1,
     });
     res.json({ orders });
+  }
+}
+
+export async function updateOrderStatus(req, res) {
+  if (!isAdmin(req)) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+
+  try {
+    const orderId = req.params.orderId;
+    const newStatus = req.body.status;
+    const notes = req.body.notes;
+
+    const order = await Order.updateOne(
+      { orderId: orderId },
+      { status: newStatus, notes: notes }
+    );
+    return res.json({ message: "Order status updated successfully" });
+  } catch (error) {
+    console.error("Error updating order status:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 }
