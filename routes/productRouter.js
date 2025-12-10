@@ -5,11 +5,14 @@ import {
   deleteProduct,
   updateProduct,
   getProductByID,
+  searchProducts,
 } from "../controllers/productController.js";
 
 const productRouter = express.Router();
 
 productRouter.get("/", getAllProducts);
+
+productRouter.get("/search/:query", searchProducts);
 
 productRouter.post("/", createProduct);
 

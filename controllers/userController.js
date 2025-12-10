@@ -4,8 +4,20 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import axios from "axios";
-
+import nodemailer from "nodemailer";
+import Otp from "../models/Otp.js";
 dotenv.config();
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
+  auth: {
+    user: "nuwanshanuka1227@gmail.com",
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
 
 export function createUser(req, res) {
   const data = req.body;
@@ -33,6 +45,13 @@ export function loginUser(req, res) {
       res.status(404).json({ message: "User not found" });
     } else {
       const user = users[0];
+
+      if (user.isBlocked) {
+        res
+          .status(403)
+          .json({ message: "User is blocked. Contact admin for assistance." });
+        return;
+      }
 
       const isPasswordValid = bcrypt.compareSync(password, user.password);
 
@@ -121,6 +140,13 @@ export async function googleLogin(req, res) {
         role: newUser.role,
       });
     } else {
+      if (user.isBlocked) {
+        res
+          .status(403)
+          .json({ message: "User is blocked. Contact admin for assistance." });
+        return;
+      }
+
       const payload = {
         email: user.email,
         firstName: user.firstName,
@@ -142,5 +168,130 @@ export async function googleLogin(req, res) {
   } catch (error) {
     console.error("Google login error:", error);
     return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function validateOTPAndUpdatePassword(req, res) {
+  try {
+    const otp = req.body.otp;
+    const newPassword = req.body.newPassword;
+    const email = req.body.email;
+
+    const otpRecord = await Otp.findOne({ email: email, otp: otp });
+
+    if (otpRecord == null) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    const hashedPassword = bcrypt.hashSync(newPassword, 10);
+    await User.updateOne(
+      { email: email },
+      { $set: { password: hashedPassword, isEmailVerified: true } }
+    );
+    await Otp.deleteMany({ email: email });
+
+    return res.json({ message: "Password updated successfully" });
+  } catch (error) {
+    console.error("Error in validateOTPAndUpdatePassword:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function sendOTP(req, res) {
+  try {
+    const email = req.params.email;
+
+    const user = await User.findOne({ email: email });
+
+    if (user == null) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    await Otp.deleteMany({
+      email: email,
+    });
+    //generate random 6 digit otp
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = new Otp({
+      email: email,
+      otp: otpCode,
+    });
+    await otp.save();
+
+    const message = {
+      from: "nuwanshanuka1227@gmail.com",
+      to: email,
+      subject: "Password Reset OTP",
+      text: `Your OTP for password reset is ${otpCode}`,
+    };
+
+    transporter.sendMail(message, (err, info) => {
+      if (err) {
+        console.error("Error sending email:", err);
+        return res.status(500).json({ message: "Failed to send OTP email" });
+      } else {
+        console.log("Email sent:", info.response);
+        return res.json({ message: "OTP email sent successfully" });
+      }
+    });
+  } catch (error) {
+    console.error("Error in sendOTP:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function getAllUsers(req, res) {
+  if (!isAdmin(req)) {
+    res.status(403).json({
+      message: "Admin access required",
+    });
+    return;
+  }
+
+  try {
+    const users = await User.find();
+    res.json({ users });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error fetching users",
+      error: error.message,
+    });
+  }
+}
+
+export async function updateUserStatus(req, res) {
+  if (!isAdmin(req)) {
+    res.status(403).json({
+      message: "Admin access required",
+    });
+    return;
+  }
+
+  const email = req.params.email;
+
+  if (req.user.email === email) {
+    return res.status(400).json({
+      message: "Admin cannot block/unblock themselves",
+    });
+  }
+
+  const isBlocked = req.body.isBlocked;
+
+  try {
+    await User.updateOne(
+      {
+        email: email,
+      },
+      {
+        $set: { isBlocked: isBlocked },
+      }
+    );
+
+    res.json({ message: "User status updated successfully" });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error updating user status",
+      error: error.message,
+    });
   }
 }
