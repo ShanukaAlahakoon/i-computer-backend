@@ -295,3 +295,33 @@ export async function updateUserStatus(req, res) {
     });
   }
 }
+
+export async function contactUs(req, res) {
+  const { name, email, subject, message } = req.body;
+
+  try {
+    const mailOptions = {
+      from: "nuwanshanuka1227@gmail.com", // යවන්නේ ඔයාගේ සිස්ටම් ඊමේල් එකෙන්
+      to: "shanukaalahakoon456@gmail.com", // කාටද ලැබෙන්න ඕනේ? (Admin ට)
+      replyTo: email, // User ගේ email එක reply-to විදියට දානවා
+      subject: `New Contact Msg: ${subject}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd;">
+          <h2 style="color: #333;">New Message from i-Computers Website</h2>
+          <p><strong>Name:</strong> ${name}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Subject:</strong> ${subject}</p>
+          <br/>
+          <p><strong>Message:</strong></p>
+          <p style="background: #f9f9f9; padding: 15px; border-radius: 5px;">${message}</p>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    res.json({ message: "Email sent successfully" });
+  } catch (error) {
+    console.error("Contact Email Error:", error);
+    res.status(500).json({ message: "Failed to send email" });
+  }
+}

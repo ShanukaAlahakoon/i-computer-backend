@@ -8,6 +8,7 @@ import {
   validateOTPAndUpdatePassword,
   getAllUsers,
   updateUserStatus,
+  contactUs,
 } from "../controllers/userController.js";
 
 const userRouter = express.Router();
@@ -20,4 +21,5 @@ userRouter.get("/send-otp/:email", sendOTP);
 userRouter.post("/verify-otp", validateOTPAndUpdatePassword);
 userRouter.get("/all", getAllUsers);
 userRouter.put("/toggle-block/:email", updateUserStatus);
+userRouter.post("/contact-us", contactUs);
 export default userRouter;
