@@ -9,9 +9,7 @@ import Otp from "../models/Otp.js";
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
+  service: "gmail",
   auth: {
     user: "nuwanshanuka1227@gmail.com",
     pass: process.env.GMAIL_APP_PASSWORD,
