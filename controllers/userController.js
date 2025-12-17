@@ -73,6 +73,7 @@ export function loginUser(req, res) {
           message: "Login successful",
           token: token,
           role: user.role,
+          user: user,
         });
       } else {
         res.status(401).json({ message: "Invalid password" });
@@ -138,6 +139,7 @@ export async function googleLogin(req, res) {
         message: "Login successful",
         token: token,
         role: newUser.role,
+        user: newUser,
       });
     } else {
       if (user.isBlocked) {
@@ -163,6 +165,7 @@ export async function googleLogin(req, res) {
         message: "Login successful",
         token: token,
         role: user.role,
+        user: user,
       });
     }
   } catch (error) {
